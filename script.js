@@ -8,6 +8,7 @@ const colorButtons = document.querySelectorAll('.color-button');
 const outputBtn = document.getElementById('output-btn');
 const resetBtn = document.getElementById('reset-btn');
 const undoBtn = document.getElementById('undo-btn');
+const mazeBtn = document.getElementById('maze-btn');
 const outputArea = document.getElementById('output-area');
 const dotOutput = document.getElementById('dot-output');
 
@@ -18,7 +19,6 @@ let isDrawing = false; // マウスボタンが押されている状態を管理
 // Undo機能のための変数
 const history = []; // 履歴スタック
 const maxHistory = 30; // 保持する履歴の最大数
-// isNewDrawOperation は不要になったため削除
 
 // ------------------------------------------
 // Undo履歴管理機能
@@ -47,22 +47,18 @@ function recordHistory() {
  * 履歴を元にグリッドの状態を復元する
  */
 function undo() {
-    if (history.length <= 1) { // 最初の状態（初期グリッド）は残しておく
+    if (history.length <= 1) { 
         return;
     }
 
-    // 最新の状態をポップ（描画前の状態に戻す）
     history.pop(); 
     
-    // 復元する状態（現在の最新）を取得
     const previousState = history[history.length - 1];
     const cells = gridContainer.querySelectorAll('.cell');
 
     cells.forEach((cell, index) => {
         const newColor = previousState[index];
-        // 全ての色クラスを削除
         cell.classList.remove('color-blue', 'color-red', 'color-white', 'color-black');
-        // 復元する色クラスを追加
         cell.classList.add(`color-${newColor}`);
     });
 
@@ -73,9 +69,112 @@ function undo() {
  * Undoボタンの有効/無効状態を更新
  */
 function updateUndoButtonState() {
-    // 履歴が最初の状態（初期化直後）より多ければ有効にする
     undoBtn.disabled = history.length <= 1;
 }
+
+/**
+ * 特定のセルに色を適用するヘルパー関数 (Undo対象外の強制適用)
+ * @param {HTMLElement} cell 
+ * @param {string} color 'black', 'white', 'red', 'blue'
+ */
+function forceApplyColor(cell, color) {
+    cell.classList.remove('color-blue', 'color-red', 'color-white', 'color-black');
+    cell.classList.add(`color-${color}`);
+}
+
+// ------------------------------------------
+// 迷路生成機能 (穴掘り法)
+// ------------------------------------------
+
+function generateMaze() {
+    if (gridSize < 3) {
+        alert('迷路を生成するには、マス目サイズを3以上にする必要があります。');
+        return;
+    }
+    
+    // 迷路生成前の状態をUndo履歴に記録
+    recordHistory(); 
+    
+    const cells = gridContainer.querySelectorAll('.cell');
+    
+    // 1. グリッド全体を一旦「壁」(黒) で埋める
+    cells.forEach(cell => {
+        forceApplyColor(cell, 'black');
+    });
+
+    // 2. 迷路の生成を開始 (穴掘り法)
+    const maxRow = gridSize - 1;
+    const maxCol = gridSize - 1;
+
+    // 奇数の座標(1, 1)からスタート
+    let startRow = 1;
+    let startCol = 1;
+
+    const visited = new Set();
+    const stack = [];
+
+    if (startRow < maxRow && startCol < maxCol) {
+        const startIndex = startRow * gridSize + startCol;
+        forceApplyColor(cells[startIndex], 'white'); 
+        visited.add(startIndex);
+        stack.push({ r: startRow, c: startCol });
+    } else {
+        return;
+    }
+
+    const directions = [
+        { dr: 0, dc: 2 }, // 右
+        { dr: 0, dc: -2 }, // 左
+        { dr: 2, dc: 0 }, // 下
+        { dr: -2, dc: 0 }  // 上
+    ];
+
+    while (stack.length > 0) {
+        const current = stack[stack.length - 1];
+        let unvisitedNeighbors = [];
+
+        directions.forEach(dir => {
+            const nextR = current.r + dir.dr;
+            const nextC = current.c + dir.dc;
+            const neighborIndex = nextR * gridSize + nextC;
+
+            if (nextR >= 1 && nextR < maxRow && nextC >= 1 && nextC < maxCol && !visited.has(neighborIndex)) {
+                unvisitedNeighbors.push({ r: nextR, c: nextC, dir: dir });
+            }
+        });
+
+        if (unvisitedNeighbors.length > 0) {
+            const randomNeighbor = unvisitedNeighbors[Math.floor(Math.random() * unvisitedNeighbors.length)];
+            
+            const wallR = current.r + randomNeighbor.dir.dr / 2;
+            const wallC = current.c + randomNeighbor.dir.dc / 2;
+            const wallIndex = wallR * gridSize + wallC;
+
+            forceApplyColor(cells[wallIndex], 'white'); 
+
+            const nextIndex = randomNeighbor.r * gridSize + randomNeighbor.c;
+            forceApplyColor(cells[nextIndex], 'white');
+            visited.add(nextIndex);
+            stack.push({ r: randomNeighbor.r, c: randomNeighbor.c });
+
+        } else {
+            stack.pop();
+        }
+    }
+    
+    // 3. 外側1マスを黒で統一 (外枠を確実に壁にする)
+    for (let i = 0; i < gridSize; i++) {
+        // 上端
+        forceApplyColor(cells[i], 'black');
+        // 下端
+        forceApplyColor(cells[(gridSize - 1) * gridSize + i], 'black');
+        // 左端
+        forceApplyColor(cells[i * gridSize], 'black');
+        // 右端
+        forceApplyColor(cells[i * gridSize + (gridSize - 1)], 'black');
+    }
+}
+
 
 // ------------------------------------------
 // 塗りつぶし実行関数
@@ -84,54 +183,42 @@ function updateUndoButtonState() {
 function applyColor(cell) {
     const currentColor = Array.from(cell.classList).find(c => c.startsWith('color-'))?.replace('color-', '');
 
-    // 既に同じ色なら塗らない
     if (currentColor === selectedColor) {
-        return false; // 塗らなかった
+        return false; 
     }
 
-    // 現在の全色クラスを削除
     cell.classList.remove('color-blue', 'color-red', 'color-white', 'color-black');
-    // 選択されている色クラスを追加
     cell.classList.add(`color-${selectedColor}`);
     
-    return true; // 塗った
+    return true; 
 }
 
 // ------------------------------------------
 // イベントハンドラー (長押し対応)
 // ------------------------------------------
 
-// セルのクリック（長押し開始）と塗りつぶし
 function handleCellInteraction(event) {
-    // マウスの左ボタン (0) のみ、またはタッチイベントを対象とする
     const isLeftClickOrTouch = (event.type === 'mousedown' && event.button === 0) || 
                                (event.type === 'touchstart');
 
     if (isLeftClickOrTouch) {
-        // 新しい描画操作の開始
         if (!isDrawing) {
-            // isDrawingがfalseの時（つまり最初のクリック/タッチ時）のみ履歴を記録
             recordHistory(); 
         }
         isDrawing = true;
 
-        applyColor(event.currentTarget); // 最初のセルを塗る
+        applyColor(event.currentTarget);
     }
-    // マウスオーバー（ドラッグ中）の塗りつぶし
     else if (event.type === 'mouseover' || event.type === 'touchmove') {
         if (isDrawing && event.currentTarget.classList.contains('cell')) {
-            // isDrawingがtrue（長押し中）で、かつ対象がセルであれば塗る
             applyColor(event.currentTarget);
         }
     }
 }
 
-/**
- * 描画モードの終了 (マウスボタンが離れたら必ず実行)
- */
 function stopDrawing() {
     if (isDrawing) {
-        isDrawing = false; // 描画状態をリセット
+        isDrawing = false;
     }
 }
 
@@ -146,23 +233,19 @@ function createGrid() {
         return;
     }
 
-    // UI切り替え
     setupSection.classList.add('hidden');
     paletteSection.classList.remove('hidden');
-    outputArea.classList.add('hidden'); // 出力エリアを非表示に
+    outputArea.classList.add('hidden'); 
 
     gridContainer.innerHTML = '';
-    // パレットのマスのサイズをCSS Gridで設定
     gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 30px)`;
 
-    // 履歴をリセット
     history.length = 0; 
     isDrawing = false;
 
-    // 全てのマスを黒で初期化
     for (let i = 0; i < gridSize * gridSize; i++) {
         const cell = document.createElement('div');
-        cell.classList.add('cell', 'color-black'); // 初期色は黒
+        cell.classList.add('cell', 'color-black');
         cell.dataset.index = i;
 
         cell.addEventListener('mousedown', handleCellInteraction);
@@ -174,12 +257,11 @@ function createGrid() {
         gridContainer.appendChild(cell);
     }
     
-    // 初期状態を履歴に記録
     recordHistory(); 
 }
 
 // ------------------------------------------
-// カラーパレットと塗りつぶし機能
+// カラーパレットと塗りつぶし機能 ★修正: この関数は前回から変更なし★
 // ------------------------------------------
 
 function handleColorSelection(event) {
@@ -188,13 +270,8 @@ function handleColorSelection(event) {
     selectedColor = event.currentTarget.dataset.color;
 }
 
-// カラーボタンにイベントリスナーを設定
-colorButtons.forEach(button => {
-    button.addEventListener('click', handleColorSelection);
-});
-
 // ------------------------------------------
-// 出力表示とダウンロード機能 (変更なし)
+// 出力表示とダウンロード機能 (前回から変更なし)
 // ------------------------------------------
 
 function outputDotPattern() {
@@ -263,11 +340,6 @@ function downloadOutput() {
     }, 'image/png');
 }
 
-
-// ------------------------------------------
-// リセット機能
-// ------------------------------------------
-
 function resetApplication() {
     paletteSection.classList.add('hidden');
     outputArea.classList.add('hidden');
@@ -292,24 +364,23 @@ generateBtn.addEventListener('click', createGrid);
 outputBtn.addEventListener('click', outputDotPattern);
 resetBtn.addEventListener('click', resetApplication);
 undoBtn.addEventListener('click', undo); 
+mazeBtn.addEventListener('click', generateMaze); 
 
-// グリッド外での描画終了を安定させるため、document全体でマウスアップを監視
+// ★ここが抜けていました！カラーボタンにイベントリスナーを設定★
+colorButtons.forEach(button => {
+    button.addEventListener('click', handleColorSelection);
+});
+
 document.addEventListener('mouseup', stopDrawing);
 document.addEventListener('touchend', stopDrawing);
 document.addEventListener('touchcancel', stopDrawing);
 
-
-// ★追加: Ctrl+Z (または Cmd+Z) のショートカットに対応
+// Ctrl+Z (または Cmd+Z) のショートカットに対応
 document.addEventListener('keydown', (event) => {
-    // Ctrlキー (Windows/Linux) または Metaキー (MacのCmdキー) が押されているか確認
     const isControlOrCommand = event.ctrlKey || event.metaKey;
 
-    // キーが 'z' または 'Z' で、かつ Ctrl/Cmd キーが押されている場合
     if (isControlOrCommand && event.key.toLowerCase() === 'z') {
-        // デフォルトのブラウザ操作（ページ履歴のUndoなど）を防止
         event.preventDefault(); 
-        
-        // Undoを実行
         undo();
     }
 });

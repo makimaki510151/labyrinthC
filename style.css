@@ -153,6 +153,16 @@ button:first-child {
     cursor: not-allowed;
 }
 
+/* ★追加: 迷路ボタンのスタイル */
+#maze-btn {
+    background-color: #8c8c8c;
+    color: white;
+}
+
+#maze-btn:hover {
+    background-color: #7a7a7a;
+}
+
 .hidden {
     display: none;
 }
