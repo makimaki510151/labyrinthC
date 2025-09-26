@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドット絵パレット</title>
+    <link rel="stylesheet" href="style.css"> 
+</head>
+
+<body>
+
+    <div id="setup-section">
+        <h2>マス目サイズ指定</h2>
+        <label for="grid-size">マス目 (N x N) のサイズを入力してください (例: 9): </label>
+        <input type="number" id="grid-size" min="1" value="9">
+        <button id="generate-btn">マス目を生成</button>
+    </div>
+
+    <div id="palette-section" class="hidden">
+        <h2>ドット絵パレット</h2>
+
+        <div id="controls">
+            <p>選択色:</p>
+            <div class="color-button color-blue" data-color="blue" title="青"></div>
+            <div class="color-button color-red" data-color="red" title="赤"></div>
+            <div class="color-button color-white" data-color="white" title="白"></div>
+            <div class="color-button color-black selected" data-color="black" title="黒"></div>
+
+            <button id="undo-btn" title="直前の操作を元に戻します" disabled>元に戻す (Undo)</button> 
+            
+            <button id="output-btn" title="ドット絵を出力エリアに表示し、画像をダウンロードします">画像出力＆ダウンロード</button>
+            <button id="reset-btn">リセット</button>
+        </div>
+
+        <div id="grid-container">
+        </div>
+
+        <div id="output-area" class="hidden">
+            <h3>出力ドット (1px/ドット)</h3>
+            <div id="dot-output">
+            </div>
+            <p style="font-size: 12px; margin-top: 10px;">※ 画像は1px/ドットでダウンロードされます。</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

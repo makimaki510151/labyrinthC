@@ -1,0 +1,162 @@
+/* CSS */
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+#setup-section {
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#grid-container {
+    display: grid;
+    border: 2px solid #333;
+    margin-bottom: 20px;
+}
+
+.cell {
+    width: 30px;
+    /* マスの大きさ */
+    height: 30px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.1s;
+}
+
+/* 色の定義 */
+.color-black {
+    background-color: black;
+}
+
+.color-blue {
+    background-color: blue;
+}
+
+.color-red {
+    background-color: red;
+}
+
+.color-white {
+    background-color: white;
+}
+
+#controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.color-button {
+    width: 40px;
+    height: 40px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+    border-radius: 4px;
+}
+
+.color-button:hover {
+    transform: scale(1.1);
+}
+
+.color-button.selected {
+    border-color: gold;
+    transform: scale(1.1);
+}
+
+#output-area {
+    padding: 15px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#dot-output {
+    margin: 10px auto;
+    /* 中央揃え */
+    display: grid;
+    border: 1px solid #333;
+}
+
+.dot-cell {
+    box-sizing: border-box;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+}
+
+button:first-child {
+    margin-left: 0;
+}
+
+
+#output-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#output-btn:hover {
+    background-color: #45a049;
+}
+
+#reset-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+#reset-btn:hover {
+    background-color: #d32f2f;
+}
+
+#generate-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+#generate-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Undoボタンのスタイル */
+#undo-btn {
+    background-color: #ff9800;
+    color: white;
+}
+
+#undo-btn:hover:not(:disabled) {
+    background-color: #e68900;
+}
+
+#undo-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.hidden {
+    display: none;
+}
+
+p {
+    margin: 0;
+}
