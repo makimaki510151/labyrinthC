@@ -18,7 +18,7 @@ let isDrawing = false; // マウスボタンが押されている状態を管理
 // Undo機能のための変数
 const history = []; // 履歴スタック
 const maxHistory = 30; // 保持する履歴の最大数
-let isNewDrawOperation = false; // 新しい描画操作が始まったか（Undo履歴記録用）
+// isNewDrawOperation は不要になったため削除
 
 // ------------------------------------------
 // Undo履歴管理機能
@@ -98,7 +98,7 @@ function applyColor(cell) {
 }
 
 // ------------------------------------------
-// イベントハンドラー (長押し対応を修正)
+// イベントハンドラー (長押し対応)
 // ------------------------------------------
 
 // セルのクリック（長押し開始）と塗りつぶし
@@ -109,12 +109,12 @@ function handleCellInteraction(event) {
 
     if (isLeftClickOrTouch) {
         // 新しい描画操作の開始
+        if (!isDrawing) {
+            // isDrawingがfalseの時（つまり最初のクリック/タッチ時）のみ履歴を記録
+            recordHistory(); 
+        }
         isDrawing = true;
-        isNewDrawOperation = true;
 
-        // すぐに描画前の状態を履歴に記録
-        recordHistory(); 
-        
         applyColor(event.currentTarget); // 最初のセルを塗る
     }
     // マウスオーバー（ドラッグ中）の塗りつぶし
@@ -155,9 +155,6 @@ function createGrid() {
     // パレットのマスのサイズをCSS Gridで設定
     gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 30px)`;
 
-    // グリッドコンテナ全体にイベントリスナーを追加（長押し対応）
-    // マウスアップ/タッチ終了はdocumentでグローバルに処理するため、グリッドコンテナには不要
-
     // 履歴をリセット
     history.length = 0; 
     isDrawing = false;
@@ -168,11 +165,9 @@ function createGrid() {
         cell.classList.add('cell', 'color-black'); // 初期色は黒
         cell.dataset.index = i;
 
-        // ★修正: clickイベントを削除し、mousedownとmouseoverのみに
         cell.addEventListener('mousedown', handleCellInteraction);
-        cell.addEventListener('mouseover', handleCellInteraction); // マウスオーバー時（ドラッグ中）の連続塗り
+        cell.addEventListener('mouseover', handleCellInteraction);
 
-        // タッチイベント対応
         cell.addEventListener('touchstart', handleCellInteraction);
         cell.addEventListener('touchmove', handleCellInteraction);
 
@@ -282,7 +277,6 @@ function resetApplication() {
     selectedColor = 'black';
     isDrawing = false; 
 
-    // グローバルなイベントリスナーの削除は不要だが、履歴はクリア
     history.length = 0; 
     updateUndoButtonState();
 
@@ -299,7 +293,23 @@ outputBtn.addEventListener('click', outputDotPattern);
 resetBtn.addEventListener('click', resetApplication);
 undoBtn.addEventListener('click', undo); 
 
-// ★重要: グリッド外での描画終了を安定させるため、document全体でマウスアップを監視
+// グリッド外での描画終了を安定させるため、document全体でマウスアップを監視
 document.addEventListener('mouseup', stopDrawing);
 document.addEventListener('touchend', stopDrawing);
 document.addEventListener('touchcancel', stopDrawing);
+
+
+// ★追加: Ctrl+Z (または Cmd+Z) のショートカットに対応
+document.addEventListener('keydown', (event) => {
+    // Ctrlキー (Windows/Linux) または Metaキー (MacのCmdキー) が押されているか確認
+    const isControlOrCommand = event.ctrlKey || event.metaKey;
+
+    // キーが 'z' または 'Z' で、かつ Ctrl/Cmd キーが押されている場合
+    if (isControlOrCommand && event.key.toLowerCase() === 'z') {
+        // デフォルトのブラウザ操作（ページ履歴のUndoなど）を防止
+        event.preventDefault(); 
+        
+        // Undoを実行
+        undo();
+    }
+});
